@@ -50,9 +50,6 @@
             imagen.src = e.target.result
             imagen.onload = function (ev){
                 let canvas = document.getElementById("canvas2")
-
-                // canvas.height = imagen.height
-                // canvas.width = imagen.width
                 canvas.getContext("2d").drawImage(imagen,0,0,imagen.width,imagen.height,0,0,500,500)
 
             }
@@ -65,12 +62,12 @@
         let heigh = canv.height
         let wid = canv.width
         canv = canv.getContext("2d")
-        canv.beginPath()
-        canv.strokeStyle = "red"
-        canv.arc(wid/2,heigh/2, (wid/2 - 5), 0, Math.PI * 2, true)
-        canv.stroke()
+        // canv.beginPath()
+        // canv.strokeStyle = "red"
+        // canv.arc(wid/2,heigh/2, (wid/2 - 5), 0, Math.PI * 2, true)
+        // canv.stroke()
 
-        let n = 200
+        let n = 300
         let Puntos = []
         for (let i = 0; i < n; i++)
         {
@@ -79,16 +76,89 @@
             let x = r * Math.cos(theta*i) + wid/2
             let y = r * Math.sin(theta*i) + heigh/2
             Puntos[i] = [x, y]
-            canv.beginPath()
-            canv.strokeStyle = "red"
-            canv.arc(x,y,1,0,Math.PI * 2,true)
-            canv.stroke()
+            // canv.beginPath()
+            // canv.strokeStyle = "red"
+            // canv.arc(x,y,1,0,Math.PI * 2,true)
+            // canv.stroke()
         }
         DibujarLineas(Puntos)
 
-        for (let k=0; k<1;k++) {
+        for (let k=0; k<50;k++) {
             RemoverLineas(Puntos)
         }
+    }
+
+    function RemoverLineas2(puntosxy)
+    {
+        const canv2 = document.getElementById("canvas").getContext("2d")
+        const canv = document.getElementById("canvas2").getContext("2d")
+        let c = canv.getImageData(0,0,500,500)
+        let px = c.data
+
+        let puntoAct = puntosxy[0]
+
+        for (let i = 0; i < puntosxy.length; i++){
+            // puntoAct = puntosxy[i]
+            let menorRGB = 0
+            let menorRGBxy = []
+            let menorRGBpas = 0
+
+            for(let cursPunto = 0; cursPunto < puntosxy.length; cursPunto++){
+                let puntoSig = puntosxy[cursPunto]
+
+                if(puntoAct[0] !== puntoSig[0] && puntoAct[1] !== puntoSig[1]){
+                    for (let n = 1/100; n < 1; n += 1 / 100) {
+
+                        if (n == 1/100) {
+                            menorRGB = 0
+                            menorRGBxy = puntoSig.slice()
+                            console.log(puntoAct,puntoSig)
+                        }
+                        let x = puntoAct[0] + (puntoSig[0] - puntoAct[0]) * n
+                        let y = puntoAct[1] + (puntoSig[1] - puntoAct[1]) * n
+                        let i4 = (Math.round(y) * 500 + Math.round(x))*4
+                        menorRGB += px[i4] + px[i4 + 1] + px[i4 + 2]
+
+                        if (n == 1/100)
+                            menorRGBpas = menorRGB
+                    }
+
+                    if (menorRGB < menorRGBpas)
+                    {
+                        menorRGBpas = menorRGB
+                        menorRGBxy = puntoSig.slice()
+                    }
+                }
+                else {
+                    // console.log(puntoAct, puntoSig)
+                }
+            }
+
+            // console.log('Pa = ',puntoAct, 'Men = ', menorRGBxy)
+            dibujarLinea(puntoAct, menorRGBxy)
+            c = canv.getImageData(0,0,500,500)
+            px = c.data
+            puntoAct = menorRGBxy.slice()
+        }
+
+
+        function dibujarLinea(desde, hasta) {
+            canv.beginPath()
+            canv.strokeStyle = "white"
+            canv.lineWidth = 0.5
+            canv.moveTo(desde[0],desde[1])
+            canv.lineTo(hasta[0],hasta[1])
+            canv.stroke()
+
+            canv2.beginPath()
+            canv2.strokeStyle = "black"
+            canv2.lineWidth = 0.1
+            canv2.moveTo(desde[0],desde[1])
+            canv2.lineTo(hasta[0],hasta[1])
+            canv2.stroke()
+        }
+
+
     }
 
     function DibujarLineas(Puntos){
@@ -122,100 +192,74 @@
        for (let P1 = 0; P1 < Puntos.length; P1++) {
            // let p = [Puntos[P1][0], Puntos[P1][1]]
            let sumRGB = []
-
+           let menor = [null,[]]
            for (let P2 = 0; P2 < Puntos.length; P2++) {
                let p2 = [Puntos[P2][0], Puntos[P2][1]]
+               sumRGB[P2] = [0,[]]
 
-               // console.log('p: ',p , 'p2: ',p2, 'ppas: ',ppas)
-               if ((p[0] == p2[0] && p[1] == p2[1]) || (p2[0] == ppas[0] && p2[1] == ppas[1]))
+               if (p[0] === p2[0] && p[1] === p2[1])
                {
-                   console.log(P1,P2)
                    sumRGB[P2] = [null,p2]
+                   // console.log(P2)
                    continue
                }
-
-               sumRGB[P2] = [0,[]]
                for (let n = 0; n < 1; n += 1 / 100) {
                    let x = p[0] + (p2[0] - p[0]) * n
                    let y = p[1] + (p2[1] - p[1]) * n
                    let i4 = (Math.round(y) * 500 + Math.round(x))*4
                    sumRGB[P2] = [sumRGB[P2][0] + px[i4] + px[i4 + 1] + px[i4 + 2], p2]
                }
+
+               if (sumRGB[P2][0] != null)
+               {
+                   if (menor[0] == null)
+                       menor = [sumRGB[P2][0], sumRGB[P2][1]]
+                   if(sumRGB[P2][0] < menor[0])
+                       menor = [sumRGB[P2][0], sumRGB[P2][1]]
+               }
+
            }
 
-           let menor = [sumRGB[0][0], sumRGB[0][1]]
 
-           for(let i=1;i < sumRGB.length; i++)
-               if(sumRGB[i][0] < menor[0] && sumRGB[i][0] != null)
-                   menor = [sumRGB[i][0], sumRGB[i][1]]
+           // let menor = [sumRGB[0][0], sumRGB[0][1]]
+           // for(let i=0;i < sumRGB.length; i++)
+           // {
+           //     if (sumRGB[i][0] != null)
+           //     {
+           //         if(sumRGB[i][0] < menor[0])
+           //             menor = [sumRGB[i][0], sumRGB[i][1]]
+           //     }
+           // }
+
 
            dibujarLinea(p, menor)
+           // console.log(p,menor)
+           ppas = p.slice()
            p = [menor[1][0], menor[1][1]]
+
+           c = canv.getImageData(0,0,500,500)
+           px = c.data
        }
 
-       function dibujarLinea(p, menor) {
-           canv.beginPath()
-           canv.strokeStyle = "white"
-           canv.lineWidth = 1
-           canv.moveTo(p[0],p[1])
-           canv.lineTo(menor[1][0],menor[1][1])
-           canv.stroke()
-           canv.lineWidth = 0.1
+        function dibujarLinea(desde, hasta) {
+            canv.beginPath()
+            canv.strokeStyle = "white"
+            canv.lineWidth = 0.1
+            canv.moveTo(desde[0],desde[1])
+            canv.lineTo(hasta[1][0],hasta[1][1])
+            canv.stroke()
+            canv.lineWidth = 0.1
 
-           canv2.beginPath()
-           canv2.strokeStyle = "black"
-           canv2.lineWidth = 0.1
-           canv2.moveTo(p[0],p[1])
-           canv2.lineTo(menor[1][0],menor[1][1])
-           canv2.stroke()
-
-           canv2.lineWidth = 0.01
-           console.log("pepe oreja")
-           console.log("pepe oreja")
-
-
-       }
-        // let p2 = [menor[1]]
-        // canv.beginPath()
-        // canv.strokeStyle = "green"
-        // canv.lineWidth = 1
-        // canv.moveTo(p[0],p[1])
-        // canv.lineTo(menor[1][0],menor[1][1])
-        // canv.stroke()
-        // canv.lineWidth = 0.1
-        // for (let n = 0; n < 1; n += 1 / 100) {
-        //     let x = p[0] + (p2[0] - p[0]) * n
-        //     let y = p[1] + (p2[1] - p[1]) * n
-        //     canv.beginPath()
-        //     canv.strokeStyle = "green"
-        //     canv.arc(x, y, 20, 0, Math.PI * 2, true)
-        //     canv.stroke()
-        // }
-
-
-        // let x1 = Puntos[0][0]
-        // let y1 = Puntos[0][1]
-        //
-        // let x2 = Puntos[1][0]
-        // let y2 = Puntos[1][1]
-        //
-        // for(let n = 0; n < 1; n+= 1/100)
-        // {
-        //     let x = x1 + (x2-x1) * n
-        //     let y = y1 + (y2-y1) * n
-        //     canv.beginPath()
-        //     canv.strokeStyle = "green"
-        //
-        //     canv.arc(x,y,2,0,Math.PI * 2,true)
-        //     canv.stroke()
-        //
-        //     console.log(x,y)
-        // }
+            canv2.beginPath()
+            canv2.strokeStyle = "black"
+            canv2.lineWidth = 0.1
+            canv2.moveTo(desde[0],desde[1])
+            canv2.lineTo(hasta[1][0],hasta[1][1])
+            canv2.stroke()
+            canv2.lineWidth = 0.01
+        }
 
     }
-
-
-
 
 </script>
 </body>
